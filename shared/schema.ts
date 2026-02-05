@@ -1,18 +1,24 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// === PAIRING CODE SCHEMA ===
+export const pairingCodeSchema = z.object({
+  botId: z.string().min(1),
+  pairingCode: z.string().min(1),
+  expiresIn: z.number().positive(), // Duration in seconds
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+// === SESSION SCHEMA ===
+export const sessionSchema = z.object({
+  botId: z.string().min(1),
+  auth: z.record(z.any()), // Baileys auth state (complex object)
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// === TYPES ===
+export type PairingCodeRequest = z.infer<typeof pairingCodeSchema>;
+export type SessionRequest = z.infer<typeof sessionSchema>;
+
+// Internal type for stored pairing codes
+export interface StoredPairingCode {
+  code: string;
+  expiresAt: number;
+}
